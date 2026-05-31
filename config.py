@@ -9,7 +9,7 @@ class Settings:
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     
-    # Database - Will use Render's DATABASE_URL environment variable
+    # Database
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./instance/ecommerce.db")
     
     # File Upload
@@ -24,11 +24,14 @@ class Settings:
     KHQR_PROFILE_KEY = config("KHQR_PROFILE_KEY", default="YOUR_PROFILE_KEY")
     KHQR_VERIFY_URL = f"https://khqr.cc/api/{KHQR_PROFILE_ID}/payment-gateway/v1/payments/check-trans"
     
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
+    TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID", default="")
+    
     # CORS
     ALLOWED_ORIGINS = [
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://your-frontend.onrender.com",  # Add your frontend URL when deployed
     ]
 
 settings = Settings()
@@ -36,4 +39,3 @@ settings = Settings()
 # Create upload directories
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 os.makedirs(os.path.join(settings.UPLOAD_DIR, "products"), exist_ok=True)
-os.makedirs(os.path.join(settings.UPLOAD_DIR, "temp"), exist_ok=True)

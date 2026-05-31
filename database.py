@@ -7,10 +7,11 @@ from config import settings
 # Get DATABASE_URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 
-print(f"DATABASE_URL: {DATABASE_URL[:50]}..." if DATABASE_URL else "No DATABASE_URL found")
+print(f"DATABASE_URL: {DATABASE_URL[:60]}..." if DATABASE_URL else "No DATABASE_URL found")
 
-# Create engine - no special SSL handling needed for internal URL
+# Create engine - Simplified for Render
 if DATABASE_URL and "postgres" in DATABASE_URL:
+    # For Render internal connection - no SSL needed
     engine = create_engine(
         DATABASE_URL,
         pool_size=5,
@@ -19,15 +20,14 @@ if DATABASE_URL and "postgres" in DATABASE_URL:
         pool_recycle=1800,
         pool_pre_ping=True,
     )
-    print("PostgreSQL engine created")
-elif DATABASE_URL and "sqlite" in DATABASE_URL:
+    print("PostgreSQL engine created (internal connection)")
+else:
+    # SQLite for local development
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False}
     )
     print("SQLite engine created")
-else:
-    raise ValueError("No valid DATABASE_URL found")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
