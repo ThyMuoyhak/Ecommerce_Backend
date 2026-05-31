@@ -7,11 +7,11 @@ from config import settings
 # Get DATABASE_URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 
-print(f"DATABASE_URL: {DATABASE_URL[:60]}..." if DATABASE_URL else "No DATABASE_URL found")
+print(f"Connecting to database...")
 
-# Create engine - Simplified for Render
+# For Render PostgreSQL (Free Tier)
 if DATABASE_URL and "postgres" in DATABASE_URL:
-    # For Render internal connection - no SSL needed
+    # Free tier requires SSL but with specific settings
     engine = create_engine(
         DATABASE_URL,
         pool_size=5,
@@ -19,15 +19,20 @@ if DATABASE_URL and "postgres" in DATABASE_URL:
         pool_timeout=30,
         pool_recycle=1800,
         pool_pre_ping=True,
+        connect_args={
+            "sslmode": "require",
+            "connect_timeout": 10,
+        }
     )
-    print("PostgreSQL engine created (internal connection)")
-else:
-    # SQLite for local development
+    print("PostgreSQL engine created (Free Tier with SSL)")
+elif DATABASE_URL and "sqlite" in DATABASE_URL:
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False}
     )
     print("SQLite engine created")
+else:
+    raise ValueError(f"Unsupported database URL")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
