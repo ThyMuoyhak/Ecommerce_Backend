@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Optional
+from jose import jwt
 
 from database import get_db
 from models import User
@@ -31,15 +32,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user_id = payload.get("sub")
+    user_id: int = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
     
-    # FIX: sub is stored as a string in the JWT, convert back to int for DB query
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,9 +67,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Phone number already registered")
     
     user = create_user(db, user_data)
-    
-    # FIX: str(user.id) so JWT sub is always a string
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role.value})
+    access_token = create_access_token(data={"sub": user.id, "role": user.role.value})
     
     return {
         "access_token": access_token,
@@ -93,8 +91,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect email or password",
         )
     
-    # FIX: str(user.id) so JWT sub is always a string
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role.value})
+    access_token = create_access_token(data={"sub": user.id, "role": user.role.value})
     
     return {
         "access_token": access_token,

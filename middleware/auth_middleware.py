@@ -2,7 +2,7 @@ from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import re
-import jwt
+from jose import jwt
 from config import settings
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -23,11 +23,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             '/redoc',
             '/api/payment/webhook',
             '/api/payment/verify',
+            '/api/admin/auth/test',
         ]
-        
-        # Also allow static files (images, CSS, etc.)
-        if path.startswith('/static/'):
-            return await call_next(request)
         
         # Check if the current path starts with any public prefix
         is_public = False
@@ -89,7 +86,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 media_type='application/json'
             )
-        except jwt.InvalidTokenError:
+        except jwt.JWTError:
             return Response(
                 content='{"detail": "Invalid token"}',
                 status_code=status.HTTP_401_UNAUTHORIZED,
