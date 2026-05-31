@@ -9,7 +9,7 @@ class Settings:
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     
-    # Database
+    # Database - Will use Render's DATABASE_URL environment variable
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./instance/ecommerce.db")
     
     # File Upload
@@ -24,16 +24,14 @@ class Settings:
     KHQR_PROFILE_KEY = config("KHQR_PROFILE_KEY", default="YOUR_PROFILE_KEY")
     KHQR_VERIFY_URL = f"https://khqr.cc/api/{KHQR_PROFILE_ID}/payment-gateway/v1/payments/check-trans"
     
-    # Telegram Bot
+    # Telegram Bot (optional)
     TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
     TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID", default="")
     
-    # CORS - Updated with your Netlify URLs
+    # CORS - Your Netlify frontend URLs
     ALLOWED_ORIGINS = [
         "http://localhost:3000",
         "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
         "https://charming-licorice-c0e6f2.netlify.app",      # frontend_user
         "https://glittering-lollipop-73b279.netlify.app",    # frontend_admin
     ]
