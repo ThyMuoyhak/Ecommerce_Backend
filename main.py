@@ -103,7 +103,7 @@ async def root():
         "message": "Welcome to E-commerce Clothing API",
         "version": "1.0.0",
         "status": "running",
-        "database": "PostgreSQL",
+        "database": "PostgreSQL" if "postgres" in settings.DATABASE_URL else "SQLite",
         "endpoints": {
             "docs": "/docs",
             "admin": "/api/admin",
@@ -137,9 +137,10 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=settings.DEBUG
     )
