@@ -10,10 +10,9 @@ from routes import auth, products, categories, orders, payment
 from admin import auth as admin_auth, products as admin_products, orders as admin_orders
 from middleware import AuthMiddleware
 
-# Create database tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup - Create database tables
     Base.metadata.create_all(bind=engine)
     print("Database tables created successfully")
     
@@ -73,6 +72,8 @@ app.add_middleware(
 
 # Static files for uploads
 os.makedirs("static/uploads", exist_ok=True)
+os.makedirs("static/uploads/products", exist_ok=True)
+os.makedirs("static/uploads/temp", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
@@ -102,6 +103,7 @@ async def root():
         "message": "Welcome to E-commerce Clothing API",
         "version": "1.0.0",
         "status": "running",
+        "database": "PostgreSQL",
         "endpoints": {
             "docs": "/docs",
             "admin": "/api/admin",
@@ -116,7 +118,22 @@ async def root():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "database": "connected"}
+    # Test database connection
+    try:
+        from sqlalchemy import text
+        from database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "environment": "production" if not settings.DEBUG else "development"
+    }
 
 if __name__ == "__main__":
     import uvicorn
@@ -124,5 +141,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=settings.DEBUG
     )

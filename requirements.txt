@@ -5,7 +5,7 @@ python-multipart==0.0.6
 
 # Database
 sqlalchemy==2.0.23
-sqlite3==3.41.1
+psycopg2-binary==2.9.9
 
 # Data Validation
 pydantic==2.5.0
@@ -19,9 +19,6 @@ bcrypt==4.1.1
 
 # HTTP Client
 httpx==0.25.1
-
-# Telegram Bot
-python-telegram-bot==20.6
 
 # File Handling
 aiofiles==23.2.1
