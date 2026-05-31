@@ -8,7 +8,7 @@ from database import engine, Base
 from config import settings
 from routes import auth, products, categories, orders, payment
 from admin import auth as admin_auth, products as admin_products, orders as admin_orders
-from middleware import AuthMiddleware
+from middleware.auth_middleware import AuthMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

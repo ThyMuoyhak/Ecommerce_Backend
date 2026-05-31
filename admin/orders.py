@@ -1,52 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+# admin/orders.py
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
-import jwt
 
 from database import get_db
 from models import Order, OrderStatus, Product, User
 from schemas import OrderResponse
-from config import settings
+from routes.auth import get_current_admin
 
 router = APIRouter(prefix="/api/admin/orders", tags=["Admin Orders"])
-
-def get_current_admin_from_token(authorization: str = Header(None), db: Session = Depends(get_db)):
-    """Extract and verify admin token from Authorization header"""
-    
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-    
-    try:
-        parts = authorization.split()
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid authorization header format")
-        
-        token = parts[1]
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        
-        user_id = payload.get("sub")
-        user_role = payload.get("role")
-        
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-        
-        if user_role != "admin":
-            raise HTTPException(status_code=403, detail="Admin access required")
-        
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        
-        return user
-        
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
 
 @router.get("/", response_model=List[OrderResponse])
 async def admin_get_all_orders(
@@ -54,7 +18,7 @@ async def admin_get_all_orders(
     limit: int = 100,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(get_current_admin_from_token)
+    current_admin = Depends(get_current_admin)
 ):
     """Get all orders (Admin only)"""
     query = db.query(Order)
@@ -63,14 +27,54 @@ async def admin_get_all_orders(
         query = query.filter(Order.status == status)
     
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-    return [OrderResponse.model_validate(order) for order in orders]
+    
+    # Manual serialization
+    result = []
+    for order in orders:
+        order_dict = {
+            "id": order.id,
+            "order_number": order.order_number,
+            "user_id": order.user_id,
+            "total_amount": order.total_amount,
+            "discount_amount": order.discount_amount,
+            "final_amount": order.final_amount,
+            "status": order.status.value,
+            "payment_status": order.payment_status.value,
+            "shipping_address": order.shipping_address,
+            "phone_number": order.phone_number,
+            "notes": order.notes,
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+            "user": {
+                "id": order.user.id,
+                "full_name": order.user.full_name,
+                "email": order.user.email
+            } if order.user else None,
+            "items": []
+        }
+        
+        for item in order.items:
+            order_dict["items"].append({
+                "id": item.id,
+                "product_id": item.product_id,
+                "product_name": item.product_name,
+                "product_size": item.product_size,
+                "product_color": item.product_color,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "total_price": item.total_price,
+                "product_image": item.product.main_image if item.product else None
+            })
+        
+        result.append(order_dict)
+    
+    return result
 
 @router.put("/{order_id}/status")
 async def admin_update_order_status(
     order_id: int,
     status: str,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(get_current_admin_from_token)
+    current_admin = Depends(get_current_admin)
 ):
     """Update order status (Admin only)"""
     if status not in [s.value for s in OrderStatus]:
@@ -80,7 +84,7 @@ async def admin_update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    order.status = status
+    order.status = OrderStatus(status)
     db.commit()
     db.refresh(order)
     
@@ -89,7 +93,7 @@ async def admin_update_order_status(
 @router.get("/dashboard/stats")
 async def get_dashboard_stats(
     db: Session = Depends(get_db),
-    current_admin: User = Depends(get_current_admin_from_token)
+    current_admin = Depends(get_current_admin)
 ):
     """Get dashboard statistics (Admin only)"""
     
