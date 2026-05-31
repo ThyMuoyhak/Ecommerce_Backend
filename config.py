@@ -28,10 +28,14 @@ class Settings:
     TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
     TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID", default="")
     
-    # CORS
+    # CORS - Updated with your Netlify URLs
     ALLOWED_ORIGINS = [
-        "https://glittering-lollipop-73b279.netlify.app",
+        "http://localhost:3000",
         "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://charming-licorice-c0e6f2.netlify.app",      # frontend_user
+        "https://glittering-lollipop-73b279.netlify.app",    # frontend_admin
     ]
 
 settings = Settings()
@@ -39,3 +43,4 @@ settings = Settings()
 # Create upload directories
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 os.makedirs(os.path.join(settings.UPLOAD_DIR, "products"), exist_ok=True)
+os.makedirs(os.path.join(settings.UPLOAD_DIR, "temp"), exist_ok=True)
