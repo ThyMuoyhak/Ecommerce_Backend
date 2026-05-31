@@ -30,7 +30,7 @@ class Settings:
     
     # CORS
     ALLOWED_ORIGINS = [
-        "http://localhost:3000",
+        "https://glittering-lollipop-73b279.netlify.app",
         "http://localhost:3001",
     ]
 
