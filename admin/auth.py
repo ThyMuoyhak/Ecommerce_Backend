@@ -6,8 +6,6 @@ from jose import jwt
 from database import get_db
 from models import User, UserRole
 from schemas import UserResponse
-from routes.auth import get_current_admin
-from crud import get_user_by_id
 from config import settings
 
 router = APIRouter(prefix="/api/admin/auth", tags=["Admin Auth"])
@@ -45,14 +43,14 @@ async def get_all_users(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_admin = Depends(get_current_admin)
+    current_admin: User = Depends(verify_admin_token)
 ):
     """Get all users (Admin only)"""
     users = db.query(User).offset(skip).limit(limit).all()
     return [UserResponse.model_validate(user) for user in users]
 
 @router.get("/verify")
-async def verify_admin(current_admin = Depends(get_current_admin)):
+async def verify_admin(current_admin: User = Depends(verify_admin_token)):
     """Verify admin access"""
     return {
         "authenticated": True,
@@ -66,10 +64,10 @@ async def update_user_role(
     user_id: int,
     role: str,
     db: Session = Depends(get_db),
-    current_admin = Depends(get_current_admin)
+    current_admin: User = Depends(verify_admin_token)
 ):
     """Update user role (Admin only)"""
-    user = get_user_by_id(db, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -85,10 +83,10 @@ async def update_user_role(
 async def toggle_user_status(
     user_id: int,
     db: Session = Depends(get_db),
-    current_admin = Depends(get_current_admin)
+    current_admin: User = Depends(verify_admin_token)
 ):
     """Activate/Deactivate user (Admin only)"""
-    user = get_user_by_id(db, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     

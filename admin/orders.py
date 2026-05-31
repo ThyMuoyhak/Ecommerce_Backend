@@ -1,5 +1,4 @@
-# admin/orders.py
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -7,12 +6,11 @@ from datetime import datetime, timedelta
 
 from database import get_db
 from models import Order, OrderStatus, Product, User
-from schemas import OrderResponse
 from routes.auth import get_current_admin
 
 router = APIRouter(prefix="/api/admin/orders", tags=["Admin Orders"])
 
-@router.get("/", response_model=List[OrderResponse])
+@router.get("/")
 async def admin_get_all_orders(
     skip: int = 0,
     limit: int = 100,
@@ -28,7 +26,6 @@ async def admin_get_all_orders(
     
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
     
-    # Manual serialization
     result = []
     for order in orders:
         order_dict = {
@@ -97,26 +94,15 @@ async def get_dashboard_stats(
 ):
     """Get dashboard statistics (Admin only)"""
     
-    # Total orders
     total_orders = db.query(Order).count()
-    
-    # Total revenue from paid orders
     total_revenue_result = db.query(func.sum(Order.final_amount)).filter(Order.payment_status == "success").scalar()
     total_revenue = float(total_revenue_result) if total_revenue_result else 0.0
-    
-    # Orders by status
     pending_orders = db.query(Order).filter(Order.status == OrderStatus.PENDING).count()
     processing_orders = db.query(Order).filter(Order.status == OrderStatus.PROCESSING).count()
     completed_orders = db.query(Order).filter(Order.status == OrderStatus.DELIVERED).count()
-    
-    # Recent orders (last 7 days)
     week_ago = datetime.utcnow() - timedelta(days=7)
     recent_orders = db.query(Order).filter(Order.created_at >= week_ago).count()
-    
-    # Total products
     total_products = db.query(Product).count()
-    
-    # Total users
     total_users = db.query(User).count()
     
     return {

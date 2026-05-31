@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import jwt
+from jose import jwt
 
 from database import get_db
 from models import Product, User
@@ -34,7 +34,7 @@ def verify_admin_token(authorization: str = Header(None), db: Session = Depends(
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/all")
@@ -53,7 +53,7 @@ async def admin_get_all_products(
     
     products = query.offset(skip).limit(limit).all()
     
-    # Manual serialization to avoid Pydantic issues
+    # Manual serialization
     result = []
     for product in products:
         result.append({
@@ -72,21 +72,10 @@ async def admin_get_all_products(
             "category": {
                 "id": product.category.id,
                 "name": product.category.name,
-                "description": product.category.description,
-                "created_at": product.category.created_at.isoformat() if product.category.created_at else None,
             } if product.category else None,
-            "sizes": [
-                {"size": s.size, "stock": s.stock} 
-                for s in product.sizes
-            ] if product.sizes else [],
-            "colors": [
-                {"color": c.color, "color_code": c.color_code} 
-                for c in product.colors
-            ] if product.colors else [],
-            "images": [
-                {"image_url": i.image_url, "is_main": i.is_main} 
-                for i in product.images
-            ] if product.images else []
+            "sizes": [{"size": s.size, "stock": s.stock} for s in product.sizes] if product.sizes else [],
+            "colors": [{"color": c.color, "color_code": c.color_code} for c in product.colors] if product.colors else [],
+            "images": [{"image_url": i.image_url, "is_main": i.is_main} for i in product.images] if product.images else []
         })
     
     return result
@@ -139,6 +128,16 @@ async def delete_product(
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Delete image files
+    if product.main_image:
+        import os
+        old_path = product.main_image.replace('/static/', 'static/')
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except Exception:
+                pass
     
     db.delete(product)
     db.commit()
