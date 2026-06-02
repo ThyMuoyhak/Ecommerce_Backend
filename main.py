@@ -50,12 +50,16 @@ async def lifespan(app: FastAPI):
     # Shutdown
     print("Shutting down...")
 
-# Initialize FastAPI app
+# Initialize FastAPI app with documentation disabled for security
 app = FastAPI(
     title=settings.APP_NAME,
     description="E-commerce Clothing API with KHQR Payment Integration",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Disable documentation
+    docs_url=None,      # Disable /docs
+    redoc_url=None,     # Disable /redoc
+    openapi_url=None,   # Disable /openapi.json
 )
 
 # Add Auth Middleware FIRST (before CORS for better security)
@@ -103,19 +107,10 @@ async def root():
         "message": "Welcome to E-commerce Clothing API",
         "version": "1.0.0",
         "status": "running",
-        "database": "PostgreSQL" if "postgres" in settings.DATABASE_URL else "SQLite",
-        "endpoints": {
-            "docs": "/docs",
-            "admin": "/api/admin",
-            "auth": "/api/auth",
-            "products": "/api/products",
-            "categories": "/api/categories",
-            "orders": "/api/orders",
-            "payment": "/api/payment"
-        }
+        "database": "PostgreSQL" if "postgres" in settings.DATABASE_URL else "SQLite"
     }
 
-# Health check endpoint
+# Health check endpoint (keep for monitoring)
 @app.get("/health")
 async def health_check():
     # Test database connection
