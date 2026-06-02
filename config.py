@@ -30,8 +30,6 @@ class Settings:
     
     # CORS - Your Netlify frontend URLs
     ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://localhost:3001",
         "https://charming-licorice-c0e6f2.netlify.app",      # frontend_user
         "https://glittering-lollipop-73b279.netlify.app",    # frontend_admin
     ]
